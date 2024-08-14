@@ -22,3 +22,16 @@ NORMAL_FONT_SIZE = 24
 # Wave texture settings
 WAVE_SIZE = 32
 WAVE_COLOUR = OCEAN_SHALLOW_COLOUR  # Wave crests
+
+# Markers
+MARKERS = [
+    {"x": -0.75, "y": 0, "label": "Cardioid Center"},
+    {"x": -1, "y": 0.25, "label": "Period-2 Bulb"},
+    {"x": -0.125, "y": 0.744, "label": "Mini Mandelbrot"},
+]
+
+MARKER_COLOR = (255, 0, 0)  # Red
+MARKER_SIZE = 5  # Pixels
+MARKER_LABEL_OFFSET = (5, 5)  # Offset for label from marker
+MARKER_TEXT_COLOUR = TEXT_COLOUR
+MARKER_TEXT_BG_COLOUR = (16, 24, 32)

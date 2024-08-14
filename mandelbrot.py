@@ -111,6 +111,10 @@ def calculate_mandelbrot_async(height, width, x_min, x_max, y_min, y_max):
     global mandelbrot_set, mandelbrot_surface, is_calc, drag_offset
     mandelbrot_set = mandelbrot(height, width, x_min, x_max, y_min, y_max)
     mandelbrot_surface = create_mandelbrot_surface(mandelbrot_set)
+
+    # Draw markers directly on the mandelbrot surface
+    draw_markers(mandelbrot_surface, x_min, x_max, y_min, y_max)
+
     is_calc = False
     drag_offset = (0, 0)  # Reset drag_offset after calculation
 
@@ -146,6 +150,29 @@ def draw_calc_msg(screen):
     screen.blit(text_surface, text_rect)
 
 
+def complex_to_screen(x, y, x_min, x_max, y_min, y_max):
+    screen_x = (x - x_min) / (x_max - x_min) * WIDTH
+    screen_y = (y - y_min) / (y_max - y_min) * HEIGHT
+    return int(screen_x), int(screen_y)
+
+
+def draw_markers(screen, x_min, x_max, y_min, y_max):
+    for marker in MARKERS:
+        screen_x, screen_y = complex_to_screen(
+            marker['x'], marker['y'], x_min, x_max, y_min, y_max)
+
+        # Draw the marker
+        pygame.draw.circle(screen, MARKER_COLOR,
+                           (screen_x, screen_y), MARKER_SIZE)
+
+        # Render the label
+        label_surface = render_text_with_background(
+            marker['label'], pixel_font, MARKER_TEXT_COLOUR, (*MARKER_TEXT_BG_COLOUR, 180))
+        label_pos = (
+            screen_x + MARKER_LABEL_OFFSET[0], screen_y + MARKER_LABEL_OFFSET[1])
+        screen.blit(label_surface, label_pos)
+
+
 def main():
     global x_min, x_max, y_min, y_max, mandelbrot_set, mandelbrot_surface, is_calc, drag_offset
 
@@ -159,6 +186,7 @@ def main():
     mandelbrot_set = mandelbrot(
         RENDER_HEIGHT, RENDER_WIDTH, x_min, x_max, y_min, y_max)
     mandelbrot_surface = create_mandelbrot_surface(mandelbrot_set)
+    draw_markers(mandelbrot_surface, x_min, x_max, y_min, y_max)
     is_calc = False
 
     # Keep track of the previous view state
@@ -226,7 +254,7 @@ def main():
 
         # Calculate and display coordinates and zoom
         zoom = calculate_zoom(x_min, x_max, y_min, y_max)
-        coord_text = f"Center: X:{(x_min + x_max) / 2:.3f} Y:{(y_min + y_max) / 2:.3f}, Zoom: {zoom:.0f}x"
+        coord_text = f"Center: X:{(x_min + x_max) / 2:.4f} Y:{(y_min + y_max) / 2:.4f}, Zoom: {zoom:.0f}x"
         coord_surface = render_text_with_background(
             coord_text, pixel_font, TEXT_COLOUR, (*TEXT_BG_COLOUR, 180))
         screen.blit(coord_surface, (10, 10))
@@ -235,7 +263,7 @@ def main():
         mouse_x, mouse_y = pygame.mouse.get_pos()
         mouse_complex_x, mouse_complex_y = screen_to_complex(
             mouse_x - drag_offset[0], mouse_y - drag_offset[1], x_min, x_max, y_min, y_max)
-        mouse_text = f"Mouse: X:{mouse_complex_x:.3f} Y:{mouse_complex_y:.3f}"
+        mouse_text = f"Mouse:  X:{mouse_complex_x:.6f} Y:{mouse_complex_y:.6f}"
         mouse_surface = render_text_with_background(
             mouse_text, pixel_font, TEXT_COLOUR, (*TEXT_BG_COLOUR, 180))
         screen.blit(mouse_surface, (10, 30))

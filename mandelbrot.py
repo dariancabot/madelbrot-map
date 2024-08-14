@@ -10,6 +10,20 @@ pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Mandelbrot Map")
 
+# Load the pixel font
+try:
+    if PIXEL_DOUBLING:
+        PIXEL_FONT_SIZE *= 2
+    pixel_font = pygame.font.Font(
+        "assets/PressStart2P-Regular.ttf", PIXEL_FONT_SIZE)
+except:
+    print("Pixel font not found. Using default font.")
+    pixel_font = pygame.font.Font(None, NORMAL_FONT_SIZE)
+
+# Calculate actual dimensions for rendering
+RENDER_WIDTH = WIDTH // 2 if PIXEL_DOUBLING else WIDTH
+RENDER_HEIGHT = HEIGHT // 2 if PIXEL_DOUBLING else HEIGHT
+
 # Initial view
 ASPECT_RATIO = WIDTH / HEIGHT
 INITIAL_X_RANGE = 3.0
@@ -85,7 +99,20 @@ def create_mandelbrot_surface(array):
             else:
                 color_array[i, j] = LAND_COLOUR
 
-    return pygame.surfarray.make_surface(color_array)
+    surface = pygame.surfarray.make_surface(color_array)
+
+    if PIXEL_DOUBLING:
+        return pygame.transform.scale(surface, (WIDTH, HEIGHT))
+    else:
+        return surface
+
+
+def calculate_mandelbrot_async(height, width, x_min, x_max, y_min, y_max):
+    global mandelbrot_set, mandelbrot_surface, is_calc, drag_offset
+    mandelbrot_set = mandelbrot(height, width, x_min, x_max, y_min, y_max)
+    mandelbrot_surface = create_mandelbrot_surface(mandelbrot_set)
+    is_calc = False
+    drag_offset = (0, 0)  # Reset drag_offset after calculation
 
 
 def calculate_zoom(x_min, x_max, y_min, y_max):
@@ -102,34 +129,35 @@ def screen_to_complex(x, y, x_min, x_max, y_min, y_max):
     return re, im
 
 
+def render_text_with_background(text, font, text_color, bg_color):
+    text_surface = font.render(text, True, text_color)
+    text_w, text_h = text_surface.get_size()
+    bg_surface = pygame.Surface((text_w + 4, text_h + 4), pygame.SRCALPHA)
+    bg_surface.fill(bg_color)
+    bg_surface.blit(text_surface, (2, 2))
+    return bg_surface
+
+
 def draw_calc_msg(screen):
-    font = pygame.font.Font(None, 24)
     loading_text = "Calculating..."
-    text_surface = font.render(loading_text, True, TEXT_COLOUR)
+    text_surface = render_text_with_background(
+        loading_text, pixel_font, TEXT_COLOUR, (*TEXT_BG_COLOUR, 180))
     text_rect = text_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2))
     screen.blit(text_surface, text_rect)
-
-
-def calculate_mandelbrot_async(height, width, x_min, x_max, y_min, y_max):
-    global mandelbrot_set, mandelbrot_surface, is_calc, drag_offset
-    mandelbrot_set = mandelbrot(height, width, x_min, x_max, y_min, y_max)
-    mandelbrot_surface = create_mandelbrot_surface(mandelbrot_set)
-    is_calc = False
-    drag_offset = (0, 0)  # Reset drag_offset after calculation
 
 
 def main():
     global x_min, x_max, y_min, y_max, mandelbrot_set, mandelbrot_surface, is_calc, drag_offset
 
     clock = pygame.time.Clock()
-    font = pygame.font.Font(None, 24)
     running = True
     dragging = False
     start_pos = None
     drag_offset = (0, 0)
 
     # Create initial Mandelbrot set surface
-    mandelbrot_set = mandelbrot(HEIGHT, WIDTH, x_min, x_max, y_min, y_max)
+    mandelbrot_set = mandelbrot(
+        RENDER_HEIGHT, RENDER_WIDTH, x_min, x_max, y_min, y_max)
     mandelbrot_surface = create_mandelbrot_surface(mandelbrot_set)
     is_calc = False
 
@@ -155,7 +183,7 @@ def main():
                     y_max = center_y + (y_max - center_y) * ZOOM_FACTOR
                     is_calc = True
                     threading.Thread(target=calculate_mandelbrot_async, args=(
-                        HEIGHT, WIDTH, x_min, x_max, y_min, y_max)).start()
+                        RENDER_HEIGHT, RENDER_WIDTH, x_min, x_max, y_min, y_max)).start()
                 # Scroll down (zoom out)
                 elif event.button == 5 and not is_calc:
                     mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -167,7 +195,7 @@ def main():
                     y_max = center_y + (y_max - center_y) / ZOOM_FACTOR
                     is_calc = True
                     threading.Thread(target=calculate_mandelbrot_async, args=(
-                        HEIGHT, WIDTH, x_min, x_max, y_min, y_max)).start()
+                        RENDER_HEIGHT, RENDER_WIDTH, x_min, x_max, y_min, y_max)).start()
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1 and dragging:
                     dragging = False
@@ -183,7 +211,7 @@ def main():
                     if current_view != prev_view and not is_calc:
                         is_calc = True
                         threading.Thread(target=calculate_mandelbrot_async, args=(
-                            HEIGHT, WIDTH, x_min, x_max, y_min, y_max)).start()
+                            RENDER_HEIGHT, RENDER_WIDTH, x_min, x_max, y_min, y_max)).start()
                     prev_view = current_view
             elif event.type == pygame.MOUSEMOTION:
                 if dragging:
@@ -198,16 +226,18 @@ def main():
 
         # Calculate and display coordinates and zoom
         zoom = calculate_zoom(x_min, x_max, y_min, y_max)
-        coord_text = f"Center: X: {(x_min + x_max) / 2:.3f}, Y: {(y_min + y_max) / 2:.3f}, Zoom: {zoom:.0f}x"
-        text_surface = font.render(coord_text, True, TEXT_COLOUR)
-        screen.blit(text_surface, (10, 10))
+        coord_text = f"Center: X:{(x_min + x_max) / 2:.3f} Y:{(y_min + y_max) / 2:.3f}, Zoom: {zoom:.0f}x"
+        coord_surface = render_text_with_background(
+            coord_text, pixel_font, TEXT_COLOUR, (*TEXT_BG_COLOUR, 180))
+        screen.blit(coord_surface, (10, 10))
 
         # Display mouse coordinates
         mouse_x, mouse_y = pygame.mouse.get_pos()
         mouse_complex_x, mouse_complex_y = screen_to_complex(
             mouse_x - drag_offset[0], mouse_y - drag_offset[1], x_min, x_max, y_min, y_max)
-        mouse_text = f"Mouse: X: {mouse_complex_x:.3f}, Y: {mouse_complex_y:.3f}"
-        mouse_surface = font.render(mouse_text, True, TEXT_COLOUR)
+        mouse_text = f"Mouse: X:{mouse_complex_x:.3f} Y:{mouse_complex_y:.3f}"
+        mouse_surface = render_text_with_background(
+            mouse_text, pixel_font, TEXT_COLOUR, (*TEXT_BG_COLOUR, 180))
         screen.blit(mouse_surface, (10, 30))
 
         if is_calc:

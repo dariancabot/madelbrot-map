@@ -133,6 +133,9 @@ def main():
     mandelbrot_surface = create_mandelbrot_surface(mandelbrot_set)
     is_calc = False
 
+    # Keep track of the previous view state
+    prev_view = (x_min, x_max, y_min, y_max)
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -175,10 +178,13 @@ def main():
                     x_max -= dx
                     y_min -= dy
                     y_max -= dy
-                    if not is_calc:
+                    # Check if the view has actually changed
+                    current_view = (x_min, x_max, y_min, y_max)
+                    if current_view != prev_view and not is_calc:
                         is_calc = True
                         threading.Thread(target=calculate_mandelbrot_async, args=(
                             HEIGHT, WIDTH, x_min, x_max, y_min, y_max)).start()
+                    prev_view = current_view
             elif event.type == pygame.MOUSEMOTION:
                 if dragging:
                     current_pos = event.pos
@@ -192,7 +198,7 @@ def main():
 
         # Calculate and display coordinates and zoom
         zoom = calculate_zoom(x_min, x_max, y_min, y_max)
-        coord_text = f"Center: X: {(x_min + x_max) / 2:.3f}, Y: {(y_min + y_max) / 2:.3f}, Zoom: {zoom:.2f}x"
+        coord_text = f"Center: X: {(x_min + x_max) / 2:.3f}, Y: {(y_min + y_max) / 2:.3f}, Zoom: {zoom:.0f}x"
         text_surface = font.render(coord_text, True, TEXT_COLOUR)
         screen.blit(text_surface, (10, 10))
 

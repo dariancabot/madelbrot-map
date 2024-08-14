@@ -18,6 +18,41 @@ x_min, x_max = -2.0, 1.0
 y_min, y_max = -INITIAL_Y_RANGE / 2, INITIAL_Y_RANGE / 2
 
 
+def create_wave_texture():
+    texture = np.zeros((WAVE_SIZE, WAVE_SIZE, 3), dtype=np.uint8)
+    texture[:, :] = OCEAN_DEEP_COLOUR
+
+    # First wave
+    texture[0, 2] = WAVE_COLOUR
+    texture[1, 2] = WAVE_COLOUR
+    texture[2, 2] = WAVE_COLOUR
+    texture[3, 1] = WAVE_COLOUR
+    texture[4, 1] = WAVE_COLOUR
+    texture[5, 0] = WAVE_COLOUR
+    texture[6, 1] = WAVE_COLOUR
+    texture[7, 1] = WAVE_COLOUR
+    texture[8, 2] = WAVE_COLOUR
+    texture[9, 2] = WAVE_COLOUR
+    texture[10, 2] = WAVE_COLOUR
+
+    # Second wave
+    texture[16, 18] = WAVE_COLOUR
+    texture[17, 18] = WAVE_COLOUR
+    texture[18, 18] = WAVE_COLOUR
+    texture[19, 17] = WAVE_COLOUR
+    texture[20, 17] = WAVE_COLOUR
+    texture[21, 16] = WAVE_COLOUR
+    texture[22, 17] = WAVE_COLOUR
+    texture[23, 17] = WAVE_COLOUR
+    texture[24, 18] = WAVE_COLOUR
+    texture[25, 18] = WAVE_COLOUR
+    texture[26, 18] = WAVE_COLOUR
+    return texture
+
+
+wave_texture = create_wave_texture()
+
+
 def mandelbrot(height, width, x_min, x_max, y_min, y_max):
     x = np.linspace(x_min, x_max, width)
     y = np.linspace(y_min, y_max, height)
@@ -36,11 +71,20 @@ def mandelbrot(height, width, x_min, x_max, y_min, y_max):
 
 
 def create_mandelbrot_surface(array):
-    color_array = np.zeros((array.shape[0], array.shape[1], 3), dtype=np.uint8)
-    color_array[:, :] = LAND_COLOUR
-    color_array[array == 0] = OCEAN_DEEP_COLOUR  # Main Mandelbrot set
-    color_array[(array > COASTLINE_ITER) & (
-        array <= MAX_ITER)] = OCEAN_SHALLOW_COLOUR
+    height, width = array.shape
+    color_array = np.zeros((height, width, 3), dtype=np.uint8)
+
+    # Apply wave texture to the deep ocean (Mandelbrot set)
+    deep_ocean = array == 0
+    for i in range(height):
+        for j in range(width):
+            if deep_ocean[i, j]:
+                color_array[i, j] = wave_texture[i % WAVE_SIZE, j % WAVE_SIZE]
+            elif array[i, j] > COASTLINE_ITER:
+                color_array[i, j] = OCEAN_SHALLOW_COLOUR
+            else:
+                color_array[i, j] = LAND_COLOUR
+
     return pygame.surfarray.make_surface(color_array)
 
 

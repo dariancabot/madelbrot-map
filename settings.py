@@ -11,5 +11,10 @@ ZOOM_FACTOR = 0.5
 OCEAN_DEEP_COLOUR = (0, 0, 96)  # Dark blue for deep ocean
 OCEAN_SHALLOW_COLOUR = (32, 64, 128)  # Lighter blue for underwater detail
 LAND_COLOUR = (245, 222, 179)  # Wheat colour for land
-VOID_COLOUR = (64, 64, 64)  # Dark gray for void
+VOID_COLOUR = (128, 128, 128)  # Grey for void when dragging
 TEXT_COLOUR = (192, 64, 0)
+
+
+# Wave texture settings
+WAVE_SIZE = 32
+WAVE_COLOUR = OCEAN_SHALLOW_COLOUR # Wave crests

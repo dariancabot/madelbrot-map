@@ -19,6 +19,8 @@ TEXT_BG_COLOUR = (128, 96, 32)
 PIXEL_FONT_SIZE = 8
 NORMAL_FONT_SIZE = 24
 
+MOUSE_TEXT_DISPLAY_TIME = 3  # seconds to display mouse text after movement
+
 # Wave texture settings
 WAVE_SIZE = 32
 WAVE_COLOUR = OCEAN_SHALLOW_COLOUR  # Wave crests

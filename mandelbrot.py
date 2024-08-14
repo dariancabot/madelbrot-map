@@ -1,6 +1,7 @@
 import pygame
 import numpy as np
 import threading
+import time
 from settings import *  # Import all settings from the settings.py file
 
 # Initialize Pygame
@@ -225,6 +226,10 @@ def main():
     # Keep track of the previous view state
     prev_view = (x_min, x_max, y_min, y_max)
 
+    # Variables for mouse text display
+    last_mouse_move_time = time.time()
+    mouse_text = ""
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -281,10 +286,17 @@ def main():
                             RENDER_HEIGHT, RENDER_WIDTH, x_min, x_max, y_min, y_max)).start()
                     prev_view = current_view
             elif event.type == pygame.MOUSEMOTION:
+                last_mouse_move_time = time.time()
                 if dragging:
                     current_pos = event.pos
                     drag_offset = (
                         current_pos[0] - start_pos[0], current_pos[1] - start_pos[1])
+
+                # Update mouse text
+                mouse_x, mouse_y = event.pos
+                mouse_complex_x, mouse_complex_y = screen_to_complex(
+                    mouse_x - drag_offset[0], mouse_y - drag_offset[1], x_min, x_max, y_min, y_max)
+                mouse_text = f"Mouse: X:{mouse_complex_x:.6f} Y:{mouse_complex_y:.6f}"
 
         screen.fill(VOID_COLOUR)  # Fill the screen with 'void' color
 
@@ -293,19 +305,16 @@ def main():
 
         # Calculate and display coordinates and zoom
         zoom = calculate_zoom(x_min, x_max, y_min, y_max)
-        coord_text = f"Center: X:{(x_min + x_max) / 2:.4f} Y:{(y_min + y_max) / 2:.4f}, Zoom: {zoom:.2f}x"
+        coord_text = f"Center: X:{(x_min + x_max) / 2:.6f} Y:{(y_min + y_max) / 2:.6f}, Zoom: {zoom:.0f}x"
         coord_surface = render_text_with_background(
             coord_text, pixel_font, TEXT_COLOUR, (*TEXT_BG_COLOUR, 180))
         screen.blit(coord_surface, (10, 10))
 
-        # Display mouse coordinates
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-        mouse_complex_x, mouse_complex_y = screen_to_complex(
-            mouse_x - drag_offset[0], mouse_y - drag_offset[1], x_min, x_max, y_min, y_max)
-        mouse_text = f"Mouse:  X:{mouse_complex_x:.6f} Y:{mouse_complex_y:.6f}"
-        mouse_surface = render_text_with_background(
-            mouse_text, pixel_font, TEXT_COLOUR, (*TEXT_BG_COLOUR, 180))
-        screen.blit(mouse_surface, (10, 30))
+        # Display mouse coordinates if recently moved
+        if time.time() - last_mouse_move_time < MOUSE_TEXT_DISPLAY_TIME:
+            mouse_surface = render_text_with_background(
+                mouse_text, pixel_font, TEXT_COLOUR, (*TEXT_BG_COLOUR, 180))
+            screen.blit(mouse_surface, (10, 30))
 
         if is_calc:
             draw_calc_msg(screen)

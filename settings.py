@@ -25,9 +25,9 @@ WAVE_COLOUR = OCEAN_SHALLOW_COLOUR  # Wave crests
 
 # Markers
 MARKERS = [
-    {"x": -0.75, "y": 0, "label": "Cardioid Center"},
-    {"x": -1, "y": 0.25, "label": "Period-2 Bulb"},
-    {"x": -0.125, "y": 0.744, "label": "Mini Mandelbrot"},
+    {"x": -0.75, "y": 0, "zoom": 8, "label": "Cardioid Center"},
+    {"x": -1, "y": 0.25, "zoom": 16, "label": "Period-2 Bulb"},
+    {"x": -0.125, "y": 0.744, "zoom": 4, "label": "Mini Mandelbrot"},
 ]
 
 MARKER_COLOR = (255, 0, 0)  # Red
@@ -35,3 +35,9 @@ MARKER_SIZE = 5  # Pixels
 MARKER_LABEL_OFFSET = (5, 5)  # Offset for label from marker
 MARKER_TEXT_COLOUR = TEXT_COLOUR
 MARKER_TEXT_BG_COLOUR = (16, 24, 32)
+DEFAULT_MARKER_ZOOM = 128
+
+# Initial view settings
+INITIAL_X_MIN, INITIAL_X_MAX = -2.0, 1.0
+INITIAL_Y_RANGE = (INITIAL_X_MAX - INITIAL_X_MIN) / (WIDTH / HEIGHT)
+INITIAL_Y_MIN, INITIAL_Y_MAX = -INITIAL_Y_RANGE / 2, INITIAL_Y_RANGE / 2

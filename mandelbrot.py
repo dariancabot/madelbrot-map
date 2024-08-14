@@ -173,6 +173,39 @@ def draw_markers(screen, x_min, x_max, y_min, y_max):
         screen.blit(label_surface, label_pos)
 
 
+def jump_to_marker(index):
+    global x_min, x_max, y_min, y_max, is_calc
+    if 0 <= index < len(MARKERS):
+        marker = MARKERS[index]
+        center_x, center_y = marker['x'], marker['y']
+
+        # Use the marker's zoom level if specified, otherwise use the default
+        zoom_level = marker.get('zoom', DEFAULT_MARKER_ZOOM)
+
+        # Calculate the view range based on the zoom level
+        initial_range = INITIAL_X_MAX - INITIAL_X_MIN
+        new_range = initial_range / zoom_level
+
+        half_width = new_range / 2
+        half_height = half_width / (WIDTH / HEIGHT)
+
+        x_min, x_max = center_x - half_width, center_x + half_width
+        y_min, y_max = center_y - half_height, center_y + half_height
+
+        is_calc = True
+        threading.Thread(target=calculate_mandelbrot_async, args=(
+            RENDER_HEIGHT, RENDER_WIDTH, x_min, x_max, y_min, y_max)).start()
+
+
+def reset_view():
+    global x_min, x_max, y_min, y_max, is_calc
+    x_min, x_max = INITIAL_X_MIN, INITIAL_X_MAX
+    y_min, y_max = INITIAL_Y_MIN, INITIAL_Y_MAX
+    is_calc = True
+    threading.Thread(target=calculate_mandelbrot_async, args=(
+        RENDER_HEIGHT, RENDER_WIDTH, x_min, x_max, y_min, y_max)).start()
+
+
 def main():
     global x_min, x_max, y_min, y_max, mandelbrot_set, mandelbrot_surface, is_calc, drag_offset
 
@@ -196,6 +229,12 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_0:
+                    reset_view()
+                elif pygame.K_1 <= event.key <= pygame.K_9:
+                    # Convert key to 0-based index
+                    jump_to_marker(event.key - pygame.K_1)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button
                     dragging = True
@@ -254,7 +293,7 @@ def main():
 
         # Calculate and display coordinates and zoom
         zoom = calculate_zoom(x_min, x_max, y_min, y_max)
-        coord_text = f"Center: X:{(x_min + x_max) / 2:.4f} Y:{(y_min + y_max) / 2:.4f}, Zoom: {zoom:.0f}x"
+        coord_text = f"Center: X:{(x_min + x_max) / 2:.4f} Y:{(y_min + y_max) / 2:.4f}, Zoom: {zoom:.2f}x"
         coord_surface = render_text_with_background(
             coord_text, pixel_font, TEXT_COLOUR, (*TEXT_BG_COLOUR, 180))
         screen.blit(coord_surface, (10, 10))

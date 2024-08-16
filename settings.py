@@ -12,6 +12,7 @@ ZOOM_FACTOR = 0.5
 OCEAN_DEEP_COLOUR = (0, 0, 96)  # Dark blue for deep ocean
 OCEAN_SHALLOW_COLOUR = (32, 64, 128)  # Lighter blue for underwater detail
 LAND_COLOUR = (245, 222, 179)  # Wheat colour for land
+OUTLINE_COLOUR = (128, 192, 224)
 VOID_COLOUR = (128, 128, 128)  # Grey for void when dragging
 TEXT_COLOUR = LAND_COLOUR
 TEXT_BG_COLOUR = (128, 96, 32)

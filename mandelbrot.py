@@ -88,6 +88,7 @@ def mandelbrot(height, width, x_min, x_max, y_min, y_max):
 def create_mandelbrot_surface(array):
     height, width = array.shape
     color_array = np.zeros((height, width, 3), dtype=np.uint8)
+    land_mask = np.zeros((height, width), dtype=bool)
 
     # Apply wave texture to the deep ocean (Mandelbrot set)
     deep_ocean = array == 0
@@ -99,6 +100,18 @@ def create_mandelbrot_surface(array):
                 color_array[i, j] = OCEAN_SHALLOW_COLOUR
             else:
                 color_array[i, j] = LAND_COLOUR
+                land_mask[i, j] = True
+
+    # Create outline
+    outline = np.zeros((height, width), dtype=bool)
+    outline[1:] |= land_mask[:-1]  # top
+    outline[:-1] |= land_mask[1:]  # bottom
+    outline[:, 1:] |= land_mask[:, :-1]  # left
+    outline[:, :-1] |= land_mask[:, 1:]  # right
+    outline &= ~land_mask  # Remove land pixels
+
+    # Apply outline
+    color_array[outline] = OUTLINE_COLOUR
 
     surface = pygame.surfarray.make_surface(color_array)
 

@@ -2,6 +2,8 @@ import pygame
 import numpy as np
 import threading
 import time
+import os
+from datetime import datetime
 from settings import *  # Import all settings from the settings.py file
 
 # Initialize Pygame
@@ -126,9 +128,6 @@ def calculate_mandelbrot_async(height, width, x_min, x_max, y_min, y_max):
     mandelbrot_set = mandelbrot(height, width, x_min, x_max, y_min, y_max)
     mandelbrot_surface = create_mandelbrot_surface(mandelbrot_set)
 
-    # Draw markers directly on the mandelbrot surface
-    draw_markers(mandelbrot_surface, x_min, x_max, y_min, y_max)
-
     is_calc = False
     drag_offset = (0, 0)  # Reset drag_offset after calculation
 
@@ -170,13 +169,13 @@ def complex_to_screen(x, y, x_min, x_max, y_min, y_max):
     return int(screen_x), int(screen_y)
 
 
-def draw_markers(screen, x_min, x_max, y_min, y_max):
+def draw_markers(surface, x_min, x_max, y_min, y_max):
     for marker in MARKERS:
         screen_x, screen_y = complex_to_screen(
             marker['x'], marker['y'], x_min, x_max, y_min, y_max)
 
         # Draw the marker
-        pygame.draw.circle(screen, MARKER_COLOR,
+        pygame.draw.circle(surface, MARKER_COLOR,
                            (screen_x, screen_y), MARKER_SIZE)
 
         # Render the label
@@ -184,7 +183,7 @@ def draw_markers(screen, x_min, x_max, y_min, y_max):
             marker['label'], pixel_font, MARKER_TEXT_COLOUR, (*MARKER_TEXT_BG_COLOUR, 180))
         label_pos = (
             screen_x + MARKER_LABEL_OFFSET[0], screen_y + MARKER_LABEL_OFFSET[1])
-        screen.blit(label_surface, label_pos)
+        surface.blit(label_surface, label_pos)
 
 
 def jump_to_marker(index):
@@ -220,6 +219,20 @@ def reset_view():
         RENDER_HEIGHT, RENDER_WIDTH, x_min, x_max, y_min, y_max)).start()
 
 
+def save_screenshot(screen):
+    # Create a 'screenshots' directory if it doesn't exist
+    if not os.path.exists('screenshots'):
+        os.makedirs('screenshots')
+
+    # Generate a timestamp for the filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"screenshots/mandelbrot_map_{timestamp}.png"
+
+    # Save the screenshot
+    pygame.image.save(screen, filename)
+    print(f"Screenshot saved as {filename}")
+
+
 def main():
     global x_min, x_max, y_min, y_max, mandelbrot_set, mandelbrot_surface, is_calc, drag_offset
 
@@ -228,13 +241,13 @@ def main():
     dragging = False
     start_pos = None
     drag_offset = (0, 0)
+    is_calc = False
+    show_markers = True
 
     # Create initial Mandelbrot set surface
     mandelbrot_set = mandelbrot(
         RENDER_HEIGHT, RENDER_WIDTH, x_min, x_max, y_min, y_max)
     mandelbrot_surface = create_mandelbrot_surface(mandelbrot_set)
-    draw_markers(mandelbrot_surface, x_min, x_max, y_min, y_max)
-    is_calc = False
 
     # Keep track of the previous view state
     prev_view = (x_min, x_max, y_min, y_max)
@@ -253,6 +266,10 @@ def main():
                 elif pygame.K_1 <= event.key <= pygame.K_9:
                     # Convert key to 0-based index
                     jump_to_marker(event.key - pygame.K_1)
+                elif event.key == pygame.K_m:
+                    show_markers = not show_markers
+                elif event.key == pygame.K_p:
+                    save_screenshot(screen)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button
                     dragging = True
@@ -315,6 +332,12 @@ def main():
 
         # Draw the Mandelbrot set with the current drag offset
         screen.blit(mandelbrot_surface, drag_offset)
+
+        # Draw markers if they're toggled on
+        if show_markers:
+            marker_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            draw_markers(marker_surface, x_min, x_max, y_min, y_max)
+            screen.blit(marker_surface, (0, 0))
 
         # Calculate and display coordinates and zoom
         zoom = calculate_zoom(x_min, x_max, y_min, y_max)

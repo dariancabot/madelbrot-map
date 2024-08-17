@@ -5,14 +5,15 @@ PIXEL_DOUBLING = True
 
 # Mandelbrot set parameters
 MAX_ITER = 512
-COASTLINE_ITER = 256
+COASTLINE_ITER1 = 270
+COASTLINE_ITER2 = 240
 ZOOM_FACTOR = 0.5
 
 # Colors
 OCEAN_DEEP_COLOUR = (0, 0, 96)  # Dark blue for deep ocean
 OCEAN_SHALLOW_COLOUR = (32, 64, 128)  # Lighter blue for underwater detail
+COASTLINE_COLOUR = (127, 163, 201)  # Pixel outline of coastline
 LAND_COLOUR = (245, 222, 179)  # Wheat colour for land
-OUTLINE_COLOUR = (128, 192, 224)
 VOID_COLOUR = (128, 128, 128)  # Grey for void when dragging
 TEXT_COLOUR = LAND_COLOUR
 TEXT_BG_COLOUR = (128, 96, 32)
@@ -21,6 +22,7 @@ PIXEL_FONT_SIZE = 8
 NORMAL_FONT_SIZE = 24
 
 MOUSE_TEXT_DISPLAY_TIME = 3  # seconds to display mouse text after movement
+MESSAGE_DISPLAY_TIME = 3  # seconds to display message text
 
 # Wave texture settings
 WAVE_SIZE = 32
@@ -35,8 +37,8 @@ MARKERS = [
 ]
 
 MARKER_COLOR = (255, 0, 0)  # Red
-MARKER_SIZE = 5  # Pixels
-MARKER_LABEL_OFFSET = (5, 5)  # Offset for label from marker
+MARKER_SIZE = 8  # Pixels
+MARKER_LABEL_OFFSET = (6, 6)  # Offset for label from marker
 MARKER_TEXT_COLOUR = TEXT_COLOUR
 MARKER_TEXT_BG_COLOUR = (16, 24, 32)
 DEFAULT_MARKER_ZOOM = 128

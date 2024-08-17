@@ -4,12 +4,10 @@ import threading
 import time
 import os
 from datetime import datetime
-from settings import *  # Import all settings from the settings.py file
+from settings import *  # Import all settings from settings.py
 
-# Initialize Pygame
+# Initialize Pygame and set up display
 pygame.init()
-
-# Set up display
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Mandelbrot Map")
 
@@ -19,8 +17,9 @@ try:
         PIXEL_FONT_SIZE *= 2
     pixel_font = pygame.font.Font(
         "assets/PressStart2P-Regular.ttf", PIXEL_FONT_SIZE)
-except:
-    print("Pixel font not found. Using default font.")
+except Exception as e:
+    print(f"Error loading font: {e}")
+    print("Using default font.")
     pixel_font = pygame.font.Font(None, NORMAL_FONT_SIZE)
 
 # Calculate actual dimensions for rendering
@@ -33,6 +32,13 @@ INITIAL_X_RANGE = 3.0
 INITIAL_Y_RANGE = INITIAL_X_RANGE / ASPECT_RATIO
 x_min, x_max = -2.0, 1.0
 y_min, y_max = -INITIAL_Y_RANGE / 2, INITIAL_Y_RANGE / 2
+
+# Message display
+# Welcome message appears for twice as long
+message_queue = [
+    {"message": "Welcome!", "time": time.time() + MESSAGE_DISPLAY_TIME},
+]
+is_calc = False
 
 
 def create_wave_texture():
@@ -98,8 +104,10 @@ def create_mandelbrot_surface(array):
         for j in range(width):
             if deep_ocean[i, j]:
                 color_array[i, j] = wave_texture[i % WAVE_SIZE, j % WAVE_SIZE]
-            elif array[i, j] > COASTLINE_ITER:
+            elif array[i, j] > COASTLINE_ITER1:
                 color_array[i, j] = OCEAN_SHALLOW_COLOUR
+            elif array[i, j] > COASTLINE_ITER2:
+                color_array[i, j] = COASTLINE_COLOUR
             else:
                 color_array[i, j] = LAND_COLOUR
                 land_mask[i, j] = True
@@ -113,7 +121,7 @@ def create_mandelbrot_surface(array):
     outline &= ~land_mask  # Remove land pixels
 
     # Apply outline
-    color_array[outline] = OUTLINE_COLOUR
+    color_array[outline] = COASTLINE_COLOUR
 
     surface = pygame.surfarray.make_surface(color_array)
 
@@ -155,12 +163,32 @@ def render_text_with_background(text, font, text_color, bg_color):
     return bg_surface
 
 
-def draw_calc_msg(screen):
-    loading_text = "Calculating..."
-    text_surface = render_text_with_background(
-        loading_text, pixel_font, TEXT_COLOUR, (*TEXT_BG_COLOUR, 180))
-    text_rect = text_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2))
-    screen.blit(text_surface, text_rect)
+def notification(message):
+    global last_message_time, message_queue
+    message_queue.append({"message": message, "time": time.time()})
+    print(f"Notification: {message}")
+
+
+def draw_message_queue(screen):
+    global message_queue, is_calc
+    offset_y = 0
+    for message in reversed(message_queue):
+        offset_y += 20
+
+        time_now = time.time()
+        if message["time"] and (time_now - message["time"] > MESSAGE_DISPLAY_TIME):
+            message_queue.remove(message)
+            continue
+
+        message_surface = render_text_with_background(
+            message["message"], pixel_font, TEXT_COLOUR, (*TEXT_BG_COLOUR, 180))
+        screen.blit(message_surface, (10, HEIGHT - 40 - offset_y))
+
+    # Special message shown if mandelbrot is being calculated
+    if is_calc:
+        text_surface = render_text_with_background(
+            "Calculating...", pixel_font, TEXT_COLOUR, (*TEXT_BG_COLOUR, 180))
+        screen.blit(text_surface, (10, HEIGHT - 40))
 
 
 def complex_to_screen(x, y, x_min, x_max, y_min, y_max):
@@ -175,8 +203,10 @@ def draw_markers(surface, x_min, x_max, y_min, y_max):
             marker['x'], marker['y'], x_min, x_max, y_min, y_max)
 
         # Draw the marker
-        pygame.draw.circle(surface, MARKER_COLOR,
-                           (screen_x, screen_y), MARKER_SIZE)
+        marker_rect = pygame.Rect(screen_x - MARKER_SIZE / 2,
+                                  screen_y - MARKER_SIZE / 2,
+                                  MARKER_SIZE, MARKER_SIZE)
+        pygame.draw.rect(surface, MARKER_COLOR, marker_rect)
 
         # Render the label
         label_surface = render_text_with_background(
@@ -190,6 +220,7 @@ def jump_to_marker(index):
     global x_min, x_max, y_min, y_max, is_calc
     if 0 <= index < len(MARKERS):
         marker = MARKERS[index]
+        notification(f"Jumping to marker: '{marker.get('label')}'")
         center_x, center_y = marker['x'], marker['y']
 
         # Use the marker's zoom level if specified, otherwise use the default
@@ -220,17 +251,18 @@ def reset_view():
 
 
 def save_screenshot(screen):
+    global last_message_time, message_queue
     # Create a 'screenshots' directory if it doesn't exist
     if not os.path.exists('screenshots'):
         os.makedirs('screenshots')
 
     # Generate a timestamp for the filename
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"screenshots/mandelbrot_map_{timestamp}.png"
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    filename = f"screenshots/map_{timestamp}.png"
 
     # Save the screenshot
     pygame.image.save(screen, filename)
-    print(f"Screenshot saved as {filename}")
+    notification(f"Screenshot saved as {filename}")
 
 
 def main():
@@ -352,8 +384,9 @@ def main():
                 mouse_text, pixel_font, TEXT_COLOUR, (*TEXT_BG_COLOUR, 180))
             screen.blit(mouse_surface, (10, 30))
 
-        if is_calc:
-            draw_calc_msg(screen)
+        # Display any notifications
+        if len(message_queue) > 0:
+            draw_message_queue(screen)
 
         pygame.display.flip()
         clock.tick(60)

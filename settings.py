@@ -30,9 +30,9 @@ WAVE_COLOUR = OCEAN_SHALLOW_COLOUR  # Wave crests
 
 # Markers
 MARKERS = [
-    {"x": -1.39918, "y": 0.00251, "zoom": 2048, "label": "Village"},
+    {"x": -1.399185, "y": 0.002514, "zoom": 2048, "label": "Village"},
     {"x": -1.396855, "y": 0.0, "zoom": 256, "label": "Bay"},
-    {"x": -1.394155, "y": 0.001225, "zoom": 512, "label": "South peninsula"},
+    {"x": -1.39417, "y": 0.00135, "zoom": 512, "label": "South peninsula"},
     {"x": 0.3968, "y": 0.2291, "zoom": 256, "label": "Great city"},
 ]
 

@@ -93,7 +93,7 @@ def mandelbrot(height, width, x_min, x_max, y_min, y_max):
     return div_time
 
 
-def create_mandelbrot_surface(array):
+def create_mandelbrot_surface(array, x_min, x_max, y_min, y_max):
     height, width = array.shape
     color_array = np.zeros((height, width, 3), dtype=np.uint8)
     land_mask = np.zeros((height, width), dtype=bool)
@@ -126,15 +126,20 @@ def create_mandelbrot_surface(array):
     surface = pygame.surfarray.make_surface(color_array)
 
     if PIXEL_DOUBLING:
-        return pygame.transform.scale(surface, (WIDTH, HEIGHT))
-    else:
-        return surface
+        surface = pygame.transform.scale(surface, (WIDTH, HEIGHT))
+
+    # Draw markers on the surface
+    if show_markers:
+        draw_markers(surface, x_min, x_max, y_min, y_max)
+
+    return surface
 
 
 def calculate_mandelbrot_async(height, width, x_min, x_max, y_min, y_max):
     global mandelbrot_set, mandelbrot_surface, is_calc, drag_offset
     mandelbrot_set = mandelbrot(height, width, x_min, x_max, y_min, y_max)
-    mandelbrot_surface = create_mandelbrot_surface(mandelbrot_set)
+    mandelbrot_surface = create_mandelbrot_surface(
+        mandelbrot_set, x_min, x_max, y_min, y_max)
 
     is_calc = False
     drag_offset = (0, 0)  # Reset drag_offset after calculation
@@ -216,6 +221,14 @@ def draw_markers(surface, x_min, x_max, y_min, y_max):
         surface.blit(label_surface, label_pos)
 
 
+def toggle_markers():
+    global show_markers, mandelbrot_surface, x_min, x_max, y_min, y_max
+    show_markers = not show_markers
+    # Redraw the mandelbrot surface with or without markers
+    mandelbrot_surface = create_mandelbrot_surface(
+        mandelbrot_set, x_min, x_max, y_min, y_max)
+
+
 def jump_to_marker(index):
     global x_min, x_max, y_min, y_max, is_calc
     if 0 <= index < len(MARKERS):
@@ -266,7 +279,7 @@ def save_screenshot(screen):
 
 
 def main():
-    global x_min, x_max, y_min, y_max, mandelbrot_set, mandelbrot_surface, is_calc, drag_offset
+    global x_min, x_max, y_min, y_max, mandelbrot_set, mandelbrot_surface, is_calc, drag_offset, show_markers
 
     clock = pygame.time.Clock()
     running = True
@@ -279,7 +292,8 @@ def main():
     # Create initial Mandelbrot set surface
     mandelbrot_set = mandelbrot(
         RENDER_HEIGHT, RENDER_WIDTH, x_min, x_max, y_min, y_max)
-    mandelbrot_surface = create_mandelbrot_surface(mandelbrot_set)
+    mandelbrot_surface = create_mandelbrot_surface(
+        mandelbrot_set, x_min, x_max, y_min, y_max)
 
     # Keep track of the previous view state
     prev_view = (x_min, x_max, y_min, y_max)
@@ -299,7 +313,7 @@ def main():
                     # Convert key to 0-based index
                     jump_to_marker(event.key - pygame.K_1)
                 elif event.key == pygame.K_m:
-                    show_markers = not show_markers
+                    toggle_markers()
                 elif event.key == pygame.K_p:
                     save_screenshot(screen)
             elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -307,7 +321,8 @@ def main():
                     dragging = True
                     start_pos = event.pos
                     drag_offset = (0, 0)
-                elif event.button == 4 and not is_calc:  # Scroll up (zoom in)
+                # Scroll up (zoom in)
+                elif event.button == 4 and not is_calc:
                     mouse_x, mouse_y = pygame.mouse.get_pos()
                     center_x, center_y = screen_to_complex(
                         mouse_x - drag_offset[0], mouse_y - drag_offset[1], x_min, x_max, y_min, y_max)
@@ -342,7 +357,7 @@ def main():
                     y_max -= dy
                     # Check if the view has actually changed
                     current_view = (x_min, x_max, y_min, y_max)
-                    if current_view != prev_view and not is_calc:
+                    if current_view != prev_view:
                         is_calc = True
                         threading.Thread(target=calculate_mandelbrot_async, args=(
                             RENDER_HEIGHT, RENDER_WIDTH, x_min, x_max, y_min, y_max)).start()
@@ -360,16 +375,11 @@ def main():
                     mouse_x - drag_offset[0], mouse_y - drag_offset[1], x_min, x_max, y_min, y_max)
                 mouse_text = f"Mouse: X:{mouse_complex_x:.6f} Y:{mouse_complex_y:.6f}"
 
-        screen.fill(VOID_COLOUR)  # Fill the screen with 'void' color
+        # Fill the screen with 'void' color
+        screen.fill(VOID_COLOUR)
 
         # Draw the Mandelbrot set with the current drag offset
         screen.blit(mandelbrot_surface, drag_offset)
-
-        # Draw markers if they're toggled on
-        if show_markers:
-            marker_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-            draw_markers(marker_surface, x_min, x_max, y_min, y_max)
-            screen.blit(marker_surface, (0, 0))
 
         # Calculate and display coordinates and zoom
         zoom = calculate_zoom(x_min, x_max, y_min, y_max)
@@ -385,7 +395,7 @@ def main():
             screen.blit(mouse_surface, (10, 30))
 
         # Display any notifications
-        if len(message_queue) > 0:
+        if is_calc or len(message_queue) > 0:
             draw_message_queue(screen)
 
         pygame.display.flip()

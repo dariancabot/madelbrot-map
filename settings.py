@@ -1,6 +1,6 @@
 # Display settings
-WIDTH = 800
-HEIGHT = 600
+WIDTH = 640 * 2
+HEIGHT = 480 * 2
 PIXEL_DOUBLING = True
 
 # Mandelbrot set parameters
